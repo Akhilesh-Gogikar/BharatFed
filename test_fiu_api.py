@@ -134,3 +134,55 @@ consent_req = {
 
 r = requests.post(consent_req_api, data=json.dumps(consent_req), headers=headers)
 print(r.content)
+
+#Consent request status
+consent_req_status_api='https://finsense.finvu.in/ConnectHub/FIU/API/V1/ConsentStatus/{}/{}'.format("5741f541-a02e-4349-9383-03eab4f6fed8", "bharatfed99@finvu")
+
+#'{"header":{"rid":"50fe9172-0144-4af3-8b23-041f38471455","ts":"2020-07-07T13:15:03.093+0000","channelId":null},"body":{"custId":"bharatfed99@finvu","consentHandle":"5741f541-a02e-4349-9383-03eab4f6fed8","consentPurpose":"Wealth management service","consentDescription":"Wealth Management Service","requestDate":"2020-07-07T13:15:03.096+0000","consentStatus":"REQUESTED","requestSessionId":null,"requestConsentId":null,"dateTimeRangeFrom":"2020-04-07T13:15:02.932+0000","dateTimeRangeTo":"2020-09-07T13:15:02.932+0000"}}'
+
+r = requests.get(consent_req_status_api, headers=headers)
+print(r.content)
+
+#data request
+
+data_api = 'https://finsense.finvu.in/ConnectHub/FIU/API/V1/FIRequest'
+
+data_req = {
+    "header": {
+        "rid": "50fe9172-0144-4af3-8b23-041f38471455",
+        "ts": str(datetime.now()).replace(" ", "T"),
+        "channelId": None
+    },
+    "body": {
+        "custId": "bharatfed99@finvu",
+        "consentId": "38b7d0e7-3465-47d2-81e4-3365d8d51def",
+        "consentHandleId": "5741f541-a02e-4349-9383-03eab4f6fed8",
+        "dateTimeRangeFrom": "2020-04-07T13:15:02.932+0000",
+        "dateTimeRangeTo": "2020-07-06T08:10:45.006+0000"
+    }
+
+}
+
+headers = {'content-type': 'application/json', "Authorization":"eyJraWQiOiJyc2ExIiwiYWxnIjoiUlMyNTYifQ.eyJpc3MiOiJjb29raWVqYXIiLCJhdWQiOiJjb29raWVqYXIiLCJleHAiOjIwNjA1ODUyNTgsImp0aSI6ImxCQlBmbWY2ckxHNEVBV2JXYUtZUlEiLCJpYXQiOjE1OTQwMjUyNTgsIm5iZiI6MTU5NDAyNTI1OCwic3ViIjoiYmhhcmF0ZmVkIiwicm9sIjoiZGV2ZWxvcGVyIn0.V2vQKt5fG6Y52g84JTvtUaYrACL7t950S88L6omLWF0-1hv-Nd1jlSUFvbQF70ibIWZ7e7T2AWOEDJexVTgoPSUIhW-iGClm6a4icvvRzr8yXGKRZOAYbVdg-IA5KirxDPHxZUmaW879hy-xGnNXHx96C6ezepZ2DyyC18ktpE_fjiVyiMSciTOvSFN-iWweDj3vcMWvJd8J8-JPjD47frRaKulQAc1p4RkXQNMj8UDKWz30xM2kaJ4eEjTU6rawBvNsFlOUKQYnXi11NmxQaG1yXd5M1l3_qZ0XSehGzk8QBPx7lq9dr8ZiNOACc7Z2lNe6zy7RlyJiTtN6sIaE2A"}
+
+
+r = requests.post(data_api, data=json.dumps(data_req), headers=headers)
+print(r.content)
+
+#data req status api
+#b'{"header":{"rid":"50fe9172-0144-4af3-8b23-041f38471455","ts":"2020-07-07T13:58:56.757+0000","channelId":null},"body":{"ver":"1.0","timestamp":"2020-07-07T13:58:56.722+0000","txnid":"abc81ec3-cb4a-411d-9906-6dfbc8753c35","consentId":"38b7d0e7-3465-47d2-81e4-3365d8d51def","sessionId":"afa5d6fc-dab6-451e-b043-b662a53b4b2d","consentHandleId":null}}'
+
+data_req_stat_api = 'https://finsense.finvu.in/ConnectHub/FIU/API/V1/FIStatus/"{}"/"{}"/"{}"/"{}"'.format("38b7d0e7-3465-47d2-81e4-3365d8d51def", "afa5d6fc-dab6-451e-b043-b662a53b4b2d", "5741f541-a02e-4349-9383-03eab4f6fed8", "bharatfed99@finvu")
+
+headers = {'content-type': 'application/json', "Authorization":"eyJraWQiOiJyc2ExIiwiYWxnIjoiUlMyNTYifQ.eyJpc3MiOiJjb29raWVqYXIiLCJhdWQiOiJjb29raWVqYXIiLCJleHAiOjIwNjA1ODUyNTgsImp0aSI6ImxCQlBmbWY2ckxHNEVBV2JXYUtZUlEiLCJpYXQiOjE1OTQwMjUyNTgsIm5iZiI6MTU5NDAyNTI1OCwic3ViIjoiYmhhcmF0ZmVkIiwicm9sIjoiZGV2ZWxvcGVyIn0.V2vQKt5fG6Y52g84JTvtUaYrACL7t950S88L6omLWF0-1hv-Nd1jlSUFvbQF70ibIWZ7e7T2AWOEDJexVTgoPSUIhW-iGClm6a4icvvRzr8yXGKRZOAYbVdg-IA5KirxDPHxZUmaW879hy-xGnNXHx96C6ezepZ2DyyC18ktpE_fjiVyiMSciTOvSFN-iWweDj3vcMWvJd8J8-JPjD47frRaKulQAc1p4RkXQNMj8UDKWz30xM2kaJ4eEjTU6rawBvNsFlOUKQYnXi11NmxQaG1yXd5M1l3_qZ0XSehGzk8QBPx7lq9dr8ZiNOACc7Z2lNe6zy7RlyJiTtN6sIaE2A"}
+
+r = requests.get(data_req_stat_api, headers=headers)
+print(r.content)
+
+#data_fetch_api
+data_fetch_api = 'https://finsense.finvu.in/ConnectHub/FIU/API/V1/FIFetch/bharatfed99@finvu/38b7d0e7-3465-47d2-81e4-3365d8d51def/afa5d6fc-dab6-451e-b043-b662a53b4b2d'
+
+headers = {'content-type': 'application/json', "Authorization":"eyJraWQiOiJyc2ExIiwiYWxnIjoiUlMyNTYifQ.eyJpc3MiOiJjb29raWVqYXIiLCJhdWQiOiJjb29raWVqYXIiLCJleHAiOjIwNjA1ODUyNTgsImp0aSI6ImxCQlBmbWY2ckxHNEVBV2JXYUtZUlEiLCJpYXQiOjE1OTQwMjUyNTgsIm5iZiI6MTU5NDAyNTI1OCwic3ViIjoiYmhhcmF0ZmVkIiwicm9sIjoiZGV2ZWxvcGVyIn0.V2vQKt5fG6Y52g84JTvtUaYrACL7t950S88L6omLWF0-1hv-Nd1jlSUFvbQF70ibIWZ7e7T2AWOEDJexVTgoPSUIhW-iGClm6a4icvvRzr8yXGKRZOAYbVdg-IA5KirxDPHxZUmaW879hy-xGnNXHx96C6ezepZ2DyyC18ktpE_fjiVyiMSciTOvSFN-iWweDj3vcMWvJd8J8-JPjD47frRaKulQAc1p4RkXQNMj8UDKWz30xM2kaJ4eEjTU6rawBvNsFlOUKQYnXi11NmxQaG1yXd5M1l3_qZ0XSehGzk8QBPx7lq9dr8ZiNOACc7Z2lNe6zy7RlyJiTtN6sIaE2A"}
+
+r = requests.get(data_fetch_api, headers=headers)
+print(r.content)
