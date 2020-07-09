@@ -186,3 +186,6 @@ headers = {'content-type': 'application/json', "Authorization":"eyJraWQiOiJyc2Ex
 
 r = requests.get(data_fetch_api, headers=headers)
 print(r.content)
+
+with open('data_response.txt','wb') as f:
+    f.write(r.content)
