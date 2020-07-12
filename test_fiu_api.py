@@ -116,32 +116,37 @@ r = requests.post(consent_temp_approval_url, data=json.dumps(consent_temp_approv
 print(r.content)
 
 #Consent request
-consent_req_api='https://finsense.finvu.in/ConnectHub/FIU/API/V1/SubmitConsentRequest'
+def consent_req(cust_id="bharatfed99@finvu", templateName="BHARATFED_PERIDOIC_DAILY_CONSENT"):
+    consent_req_api='https://finsense.finvu.in/ConnectHub/FIU/API/V1/SubmitConsentRequest'
 
-consent_req = {
-    "header": {
-        "rid": "50fe9172-0144-4af3-8b23-041f38471455",
-        "ts": str(datetime.now()).replace(" ", "T"),
-        "channelId": None
-    },
-    "body": {
-        "custId": "bharatfed99@finvu",
-        "consentDescription": "Wealth Management Service",
-        "templateName":"BHARATFED_PERIDOIC_DAILY_CONSENT"
+    consent_req = {
+        "header": {
+            "rid": "50fe9172-0144-4af3-8b23-041f38471455",
+            "ts": str(datetime.now()).replace(" ", "T"),
+            "channelId": None
+        },
+        "body": {
+            "custId": "".format(cust_id),
+            "consentDescription": "Wealth Management Service",
+            "templateName":"".format(templateName)
+        }
+
     }
 
-}
-
-r = requests.post(consent_req_api, data=json.dumps(consent_req), headers=headers)
-print(r.content)
+    r = requests.post(consent_req_api, data=json.dumps(consent_req), headers=headers)
+    print(r.content)
+    return r.content
 
 #Consent request status
-consent_req_status_api='https://finsense.finvu.in/ConnectHub/FIU/API/V1/ConsentStatus/{}/{}'.format("5741f541-a02e-4349-9383-03eab4f6fed8", "bharatfed99@finvu")
+def check_consent_status(consent_handle="5741f541-a02e-4349-9383-03eab4f6fed8", cust_id="bharatfed99@finvu"):
+    consent_req_status_api='https://finsense.finvu.in/ConnectHub/FIU/API/V1/ConsentStatus/{}/{}'.format(consent_handle, cust_id)
 
-#'{"header":{"rid":"50fe9172-0144-4af3-8b23-041f38471455","ts":"2020-07-07T13:15:03.093+0000","channelId":null},"body":{"custId":"bharatfed99@finvu","consentHandle":"5741f541-a02e-4349-9383-03eab4f6fed8","consentPurpose":"Wealth management service","consentDescription":"Wealth Management Service","requestDate":"2020-07-07T13:15:03.096+0000","consentStatus":"REQUESTED","requestSessionId":null,"requestConsentId":null,"dateTimeRangeFrom":"2020-04-07T13:15:02.932+0000","dateTimeRangeTo":"2020-09-07T13:15:02.932+0000"}}'
+    #'{"header":{"rid":"50fe9172-0144-4af3-8b23-041f38471455","ts":"2020-07-07T13:15:03.093+0000","channelId":null},"body":{"custId":"bharatfed99@finvu","consentHandle":"5741f541-a02e-4349-9383-03eab4f6fed8","consentPurpose":"Wealth management service","consentDescription":"Wealth Management Service","requestDate":"2020-07-07T13:15:03.096+0000","consentStatus":"REQUESTED","requestSessionId":null,"requestConsentId":null,"dateTimeRangeFrom":"2020-04-07T13:15:02.932+0000","dateTimeRangeTo":"2020-09-07T13:15:02.932+0000"}}'
 
-r = requests.get(consent_req_status_api, headers=headers)
-print(r.content)
+    r = requests.get(consent_req_status_api, headers=headers)
+
+    print(r.content)
+    return r.content
 
 #data request
 

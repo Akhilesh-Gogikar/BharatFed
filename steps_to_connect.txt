@@ -1,0 +1,31 @@
+These are the steps to be followed when onboarding a new user:
+
+1) Register the new user here with a generated finvu id with mobile number and password and password confirmation -> https://finvu.in/webview/onboarding/webview-register
+2) Save the finvu id, mobile number and password for future use
+###
+Just for the test data phase ensure that users data is prepopulated in the fip apis using the file test_account_create.py
+
+providing users phone number and email id is es enough all the other details can be generated on the fly and saved to a db
+
+###
+3) Generate a consent request using an approved template via the consent_req function in the test_fiu_api.py
+
+4) Save the consent handle received in the response
+
+5) Login to this webpage with the saved finvu id and password-> https://finvu.in/webview/onboarding/webview-login
+
+6) When redirected to this message relay the choices of drop down to the user -> https://finvu.in/webview/onboarding/linked-account-message
+
+7) User links an account in a specific bank from the drop down - Bank of Baroda url : http://api.finvu.in, ICICI Bank url : https://apialt.finvu.in
+Relay the choics of the user to this webpage and relay the response until the response changes and procedes to next page -> https://finvu.in/webview/onboarding/select-bank
+
+8) The user selects the appropriate consent requests and check the box against it and selects it
+
+9) User is requested and OTP at this point which should be entered and that OTP approves the consent for us to utilize
+-> consent status can be checked using the check_consent_status function in the test_fiu_api.py and the consent id can be saved for data request
+
+10) Once this is done we can generate data requests using the consent handle and consent id which we have stored
+
+11) Once the data request is approved by the AA we can relay the data and relay it to the user.
+
+
