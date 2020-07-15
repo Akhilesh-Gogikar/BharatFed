@@ -7,6 +7,19 @@ import numpy as np
 import pickle
 from datetime import datetime, timedelta
 
+def intervaled_cumsum(a, trigger_val=1, start_val = 0, invalid_specifier=-1):
+    out = np.ones(a.size,dtype=int)
+    idx = np.flatnonzero(a==trigger_val)
+    if len(idx)==0:
+        return np.full(a.size,invalid_specifier)
+    else:
+        out[idx[0]] = -idx[0] + 1
+        out[0] = start_val
+        out[idx[1:]] = idx[:-1] - idx[1:] + 1
+        np.cumsum(out, out=out)
+        out[:idx[0]] = invalid_specifier
+        return out
+
 
 def train_save_model(data):
     '''
@@ -62,8 +75,6 @@ def train_save_model(data):
         'amount_scaler': amt_scaler,
         'category_encoder': le
     }
-
-    #print(data['body'])
 
     modelfile = '{}.sav'.format(data['body'][0]['fiObjects'][0]['Profile']['Holders']['Holder']['pan'])
 
