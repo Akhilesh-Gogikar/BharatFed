@@ -116,7 +116,61 @@ def expense_per_month(data):
 
     return fig_html
 
+def expense_per_year(data):
+    year_data = data.groupby(['type', 'category']).resample('Y', on='date').sum().reset_index().sort_values(
+        by='date')  #
+    year_data = year_data.loc[year_data['type'] == 'DEBIT']
+    year_data = year_data.drop(columns=['type'])
+    year_data = year_data.set_index('date')
+    pivot_df = year_data.pivot(columns='category', values='amount')
+    pivot_df.index = pivot_df.index.year
+    ax = pivot_df.plot.bar(stacked=True)
+    return ax
+
+def preds_to_df(data):
+    '''
+
+    :param data: Predictions from the model
+    :return: df for charting purposes
+    '''
+
+    date_list = []
+
+    type_list = []
+
+    amount_list = []
+
+    amount_cat_list = []
+
+    for p in data['prediction']:
+        if p['type'] == 'CREDIT':
+            date_list.append(p['dates'])
+            type_list.append(p['type'])
+            amount_list.append(p['amount'])
+            amount_cat_list.append(p['category'])
+
+        else:
+            date_list.append(p['dates'])
+            type_list.append(p['type'])
+            amount_list.append(p['amount'])
+            amount_cat_list.append(p['category'])
+
+    data_d = {'date': date_list, 'category': amount_cat_list, 'type': type_list, 'amount': amount_list}
+    df = pd.DataFrame(data=data_d)
+    df['date'] = pd.to_datetime(df['date'])
+
+    return df
+
+
 def json_to_df(data):
+
+    date_list = []
+
+    type_list = []
+
+    amount_list = []
+
+    amount_cat_list = []
 
     # start_date = data['body'][0]['fiObjects'][0]['Transactions']['start_date']
     # end_date = data['body'][0]['fiObjects'][0]['Transactions']['start_date']
@@ -139,35 +193,27 @@ def json_to_df(data):
 
     return df
 
-
-def expense_per_year(data):
-    year_data = data.groupby(['type', 'category']).resample('Y', on='date').sum().reset_index().sort_values(
-        by='date')  #
-    year_data = year_data.loc[year_data['type'] == 'DEBIT']
-    year_data = year_data.drop(columns=['type'])
-    year_data = year_data.set_index('date')
-    pivot_df = year_data.pivot(columns='category', values='amount')
-    pivot_df.index = pivot_df.index.year
-    ax = pivot_df.plot.bar(stacked=True)
-    return ax
+#Testing the utils below
 
 if __name__ == '__main__' :
-
-    date_list = []
-
-    type_list = []
-
-    amount_list = []
-
-    amount_cat_list = []
 
     with open('data_response.txt') as json_file:
         data = json.load(json_file)
 
-        df = json_to_df(data)
+        #df = json_to_df(data)
 
-    ax = earnings_per_year(df)
+        from ml_utils import return_predictions
 
-    #plt.show()
+        stat = return_predictions(data)
+
+        balance = int(stat[1])
+
+        preds = json.loads(stat[0])
+
+        df = preds_to_df(preds)
+
+    ax = earnings_by_category(df)
+
+    plt.show()
 
     print(ax)

@@ -7,6 +7,7 @@ import json
 from sklearn import preprocessing
 from diffprivlib.models import LinearRegression, LogisticRegression
 from ml_utils import train_save_model, return_predictions
+from find_spare_balance import find_spare_balance
 
 date_list = []
 amount_list = []
@@ -37,7 +38,21 @@ with open('data_response.txt') as json_file:
 
     stat = return_predictions(data)
 
-    print(stat)
+    balance = int(stat[1])
+
+    preds = json.loads(stat[0])
+
+    #print(preds['prediction'])
+
+    spare_bal = find_spare_balance(preds['prediction'], balance)
+
+    print("The user has {} rupees in his account which the prediction model forecasts won't be spent".format(spare_bal))
+
+
+
+
+
+
 
 '''
     cr_list = set()
