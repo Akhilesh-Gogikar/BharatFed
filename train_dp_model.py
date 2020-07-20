@@ -27,7 +27,7 @@ def intervaled_cumsum(a, trigger_val=1, start_val = 0, invalid_specifier=-1):
         out[:idx[0]] = invalid_specifier
         return out
 
-with open('data_response.txt') as json_file:
+with open('data_response_bharatfed99@finvu_1yr.txt') as json_file:
     data = json.load(json_file)
 
     print(data['body'][0]['fiObjects'][0]['Profile']['Holders']['Holder']['pan'])
@@ -42,7 +42,7 @@ with open('data_response.txt') as json_file:
 
     preds = json.loads(stat[0])
 
-    #print(preds['prediction'])
+    print(preds['prediction'])
 
     spare_bal = find_spare_balance(preds['prediction'], balance)
 

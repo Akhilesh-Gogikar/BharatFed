@@ -98,7 +98,7 @@ def train_save_model(data):
     return out
 
 
-def return_predictions(data, days=90):
+def return_predictions(data, days=30):
     '''
 
     :param data: The json of the request data available to make prediction must have length greater than 14 entries

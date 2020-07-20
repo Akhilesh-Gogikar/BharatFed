@@ -15,7 +15,7 @@ reg_test = {
         "channelId": "finsense"
     },
     "body": {
-        "userName": "bharatfed",
+        "userName": "bharatfed99",
         "password": "6190",
         "confirmPassword": "6190"
     }
@@ -34,7 +34,7 @@ login_test = {
         "channelId": "finsense"
     },
     "body":{
-        "userId": "bharatfed",
+        "userId": "bharatfed99",
         "password": "6190"
     }
 }
@@ -45,8 +45,8 @@ print(r.content)
 #Consent Template test
 
 consent_temp_url = 'https://finsense.finvu.in/ConnectHub/FIU/API/V1/ConsentTemplate'
-
-headers = {'content-type': 'application/json', "Authorization":"eyJraWQiOiJyc2ExIiwiYWxnIjoiUlMyNTYifQ.eyJpc3MiOiJjb29raWVqYXIiLCJhdWQiOiJjb29raWVqYXIiLCJleHAiOjIwNjA1ODUyNTgsImp0aSI6ImxCQlBmbWY2ckxHNEVBV2JXYUtZUlEiLCJpYXQiOjE1OTQwMjUyNTgsIm5iZiI6MTU5NDAyNTI1OCwic3ViIjoiYmhhcmF0ZmVkIiwicm9sIjoiZGV2ZWxvcGVyIn0.V2vQKt5fG6Y52g84JTvtUaYrACL7t950S88L6omLWF0-1hv-Nd1jlSUFvbQF70ibIWZ7e7T2AWOEDJexVTgoPSUIhW-iGClm6a4icvvRzr8yXGKRZOAYbVdg-IA5KirxDPHxZUmaW879hy-xGnNXHx96C6ezepZ2DyyC18ktpE_fjiVyiMSciTOvSFN-iWweDj3vcMWvJd8J8-JPjD47frRaKulQAc1p4RkXQNMj8UDKWz30xM2kaJ4eEjTU6rawBvNsFlOUKQYnXi11NmxQaG1yXd5M1l3_qZ0XSehGzk8QBPx7lq9dr8ZiNOACc7Z2lNe6zy7RlyJiTtN6sIaE2A"}
+token = "eyJraWQiOiJyc2ExIiwiYWxnIjoiUlMyNTYifQ.eyJpc3MiOiJjb29raWVqYXIiLCJhdWQiOiJjb29raWVqYXIiLCJleHAiOjIwNjE2OTY1NjksImp0aSI6Ik9TY2hQQUNZR3BtSGhYNnJaWTRtR2ciLCJpYXQiOjE1OTUxMzY1NjksIm5iZiI6MTU5NTEzNjU2OSwic3ViIjoiYmhhcmF0ZmVkIiwicm9sIjoiZGV2ZWxvcGVyIn0.a76TgpKq81l0S7Lf16id4Aew45yay8BzLB488yPWq72Jj5EEMltNt_VpRsuxnKq-fHoXNgcq9x34ncfTbJwZhlIL22z0l_p0d3cY49DqsvTc4CCv7gfLiEXN56jtIPqd41YaLAYpowRVxLv1lFrFIJZ2MBo_lYB62vDFMfBIA7e-JAdJH_Zxchlmz3IAYSmhLwzbcGem4WPy5EAhelvAS3fZFP5zhDpl44g42R5oxevoom7MTUKQ_uY0xi3bwCMyQbIcpgK3nTP5c2Ya8ePx3WH3krIDmFmCHt0W68E20DX337NOz9hQol0bFe4VZzJvNY5rL8BBW2fTRI38onWOfQ"
+headers = {'content-type': 'application/json', "Authorization":token}
 
 consent_template = {
     "header": {
@@ -188,6 +188,7 @@ print(r.content)
 data_fetch_api = 'https://finsense.finvu.in/ConnectHub/FIU/API/V1/FIFetch/bharatfed99@finvu/38b7d0e7-3465-47d2-81e4-3365d8d51def/afa5d6fc-dab6-451e-b043-b662a53b4b2d'
 
 headers = {'content-type': 'application/json', "Authorization":"eyJraWQiOiJyc2ExIiwiYWxnIjoiUlMyNTYifQ.eyJpc3MiOiJjb29raWVqYXIiLCJhdWQiOiJjb29raWVqYXIiLCJleHAiOjIwNjA1ODUyNTgsImp0aSI6ImxCQlBmbWY2ckxHNEVBV2JXYUtZUlEiLCJpYXQiOjE1OTQwMjUyNTgsIm5iZiI6MTU5NDAyNTI1OCwic3ViIjoiYmhhcmF0ZmVkIiwicm9sIjoiZGV2ZWxvcGVyIn0.V2vQKt5fG6Y52g84JTvtUaYrACL7t950S88L6omLWF0-1hv-Nd1jlSUFvbQF70ibIWZ7e7T2AWOEDJexVTgoPSUIhW-iGClm6a4icvvRzr8yXGKRZOAYbVdg-IA5KirxDPHxZUmaW879hy-xGnNXHx96C6ezepZ2DyyC18ktpE_fjiVyiMSciTOvSFN-iWweDj3vcMWvJd8J8-JPjD47frRaKulQAc1p4RkXQNMj8UDKWz30xM2kaJ4eEjTU6rawBvNsFlOUKQYnXi11NmxQaG1yXd5M1l3_qZ0XSehGzk8QBPx7lq9dr8ZiNOACc7Z2lNe6zy7RlyJiTtN6sIaE2A"}
+
 
 r = requests.get(data_fetch_api, headers=headers)
 print(r.content)

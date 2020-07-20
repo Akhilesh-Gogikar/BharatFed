@@ -28,12 +28,17 @@ def earnings_per_week(data):
     week_data = week_data.drop(columns=['type'])
     week_data = week_data.set_index('date')
     pivot_df = week_data.pivot(columns='category', values='amount')
-    pivot_df.index = pivot_df.index.week
-    ax = pivot_df.plot.bar(stacked=True)
+    pivot_df['week'] = pivot_df.index.week
+    pivot_df['month'] = pivot_df.index.month_name()
+    pivot_df['year'] = pivot_df.index.to_series().dt.strftime('%Y')
+    pivot_df.index = pivot_df.index.date
+    print(pivot_df)
+    # pivot_df.index = pivot_df.index.week
+    # ax = pivot_df.plot.bar(stacked=True)
 
-    fig_html = convert_fig_to_html(plt.figure())
+    # fig_html = convert_fig_to_html(plt.figure())
 
-    return fig_html
+    return pivot_df.to_json(orient='index')
 
 def earnings_per_month(data):
     mon_data = data.groupby(['type', 'category']).resample('M', on='date').sum().reset_index().sort_values(
@@ -42,12 +47,16 @@ def earnings_per_month(data):
     mon_data = mon_data.drop(columns=['type'])
     mon_data = mon_data.set_index('date')
     pivot_df = mon_data.pivot(columns='category', values='amount')
-    pivot_df.index = pivot_df.index.month_name()
-    ax = pivot_df.plot.bar(stacked=True)
+    pivot_df['month'] = pivot_df.index.month_name()
+    pivot_df['year'] = pivot_df.index.to_series().dt.strftime('%Y')
+    pivot_df.index = pivot_df.index.week
+    print(pivot_df)
+    # for mon in pivot_df['month']:
+    # ax = pivot_df[pivot_df['month']==mon].plot.bar(stacked=True, title=mon)
 
-    fig_html = convert_fig_to_html(plt.figure())
+    # fig_html = convert_fig_to_html(plt.figure())
 
-    return fig_html
+    return pivot_df.to_json(orient='index')
 
 def earnings_per_year(data):
     year_data = data.groupby(['type', 'category']).resample('Y', on='date').sum().reset_index().sort_values(
@@ -56,75 +65,104 @@ def earnings_per_year(data):
     year_data = year_data.drop(columns=['type'])
     year_data = year_data.set_index('date')
     pivot_df = year_data.pivot(columns='category', values='amount')
-    pivot_df.index = pivot_df.index.year
-    ax = pivot_df.plot.bar(stacked=True)
+    pivot_df['year'] = pivot_df.index.to_series().dt.strftime('%Y')
 
-    fig_html = convert_fig_to_html(plt.figure())
-
-    return fig_html
+    pivot_df.index = pivot_df.index.month_name()
+    #for year in pivot_df['year']:
+        #ax = pivot_df[pivot_df['year'] == year].plot.bar(stacked=True, title=year)
+    return data.to_json(orient='index')
 
 def earnings_by_category(data):
     data = data.groupby(['type', 'category']).resample('W-Mon', on='date').sum().reset_index().sort_values(by='date')
 
     data = data.loc[data['type'] == 'CREDIT']
 
-    data = data.groupby(['category']).sum()
+    data = data.set_index('date')
 
-    plot = data.plot.pie(y='amount', figsize=(5, 5))
+    data['week'] = data.index.week
+    data['month'] = data.index.month_name()
+    data['year'] = data.index.to_series().dt.strftime('%Y')
 
-    fig_html = convert_fig_to_html(plt.figure())
+    data = data.groupby(['year', 'month', 'week', 'category']).sum()
 
-    return fig_html
+    #data = data.groupby(['category']).sum()
+
+    #plot = data.plot.pie(y='amount', figsize=(5, 5))
+
+    #fig_html = convert_fig_to_html(plt.figure())
+
+    return data.to_json(orient='index')
 
 def expense_by_category(data):
     data = data.groupby(['type', 'category']).resample('W-Mon', on='date').sum().reset_index().sort_values(by='date')
 
     data = data.loc[data['type'] == 'DEBIT']
 
-    data = data.groupby(['category']).sum()
+    data = data.set_index('date')
 
-    plot = data.plot.pie(y='amount', figsize=(5, 5))
+    data['week'] = data.index.week
+    data['month'] = data.index.month_name()
+    data['year'] = data.index.to_series().dt.strftime('%Y')
 
-    fig_html = convert_fig_to_html(plt.figure())
+    data = data.groupby(['year', 'month', 'week', 'category']).sum()
+    #data = data.groupby(['category','week']).sum()
+    print(data)
 
-    return fig_html
+    #plot = data.plot.pie(y='amount', figsize=(5, 5), subplots=True)
+
+    #fig_html = convert_fig_to_html(plt.figure())
+
+    return data.to_json(orient='index')
 
 def expense_per_week(data):
-    week_data = data.groupby(['type', 'category']).resample('W-Mon', on='date').sum().reset_index().sort_values(by='date')#
+    week_data = data.groupby(['type', 'category']).resample('D', on='date').sum().reset_index().sort_values(by='date')#
     week_data = week_data.loc[week_data['type'] == 'DEBIT']
     week_data = week_data.drop(columns=['type'])
     week_data = week_data.set_index('date')
     pivot_df = week_data.pivot(columns='category', values='amount')
-    pivot_df.index = pivot_df.index.week
-    ax = pivot_df.plot.bar(stacked=True)
+    pivot_df['week'] = pivot_df.index.week
+    pivot_df['month'] = pivot_df.index.month_name()
+    pivot_df['year'] = pivot_df.index.to_series().dt.strftime('%Y')
+    pivot_df.index = pivot_df.index.date
+    print(pivot_df)
+    #pivot_df.index = pivot_df.index.week
+    #ax = pivot_df.plot.bar(stacked=True)
 
-    fig_html = convert_fig_to_html(plt.figure())
+    #fig_html = convert_fig_to_html(plt.figure())
 
-    return fig_html
+    return pivot_df.to_json(orient='index')
 
 def expense_per_month(data):
-    mon_data = data.groupby(['type', 'category']).resample('M', on='date').sum().reset_index().sort_values(
+    mon_data = data.groupby(['type', 'category']).resample('W-Mon', on='date').sum().reset_index().sort_values(
         by='date')  #
     mon_data = mon_data.loc[mon_data['type'] == 'DEBIT']
     mon_data = mon_data.drop(columns=['type'])
     mon_data = mon_data.set_index('date')
     pivot_df = mon_data.pivot(columns='category', values='amount')
-    pivot_df.index = pivot_df.index.month_name()
-    ax = pivot_df.plot.bar(stacked=True)
+    pivot_df['month'] = pivot_df.index.month_name()
+    pivot_df['year'] = pivot_df.index.to_series().dt.strftime('%Y')
+    pivot_df.index = pivot_df.index.week
+    print(pivot_df)
+    #for mon in pivot_df['month']:
+        #ax = pivot_df[pivot_df['month']==mon].plot.bar(stacked=True, title=mon)
 
-    fig_html = convert_fig_to_html(plt.figure())
+    #fig_html = convert_fig_to_html(plt.figure())
 
-    return fig_html
+    return pivot_df.to_json(orient='index')
 
 def expense_per_year(data):
-    year_data = data.groupby(['type', 'category']).resample('Y', on='date').sum().reset_index().sort_values(
+    year_data = data.groupby(['type', 'category']).resample('M', on='date').sum().reset_index().sort_values(
         by='date')  #
+    print(year_data)
     year_data = year_data.loc[year_data['type'] == 'DEBIT']
     year_data = year_data.drop(columns=['type'])
     year_data = year_data.set_index('date')
     pivot_df = year_data.pivot(columns='category', values='amount')
-    pivot_df.index = pivot_df.index.year
-    ax = pivot_df.plot.bar(stacked=True)
+    pivot_df['year'] = pivot_df.index.to_series().dt.strftime('%Y')
+
+    pivot_df.index = pivot_df.index.month_name()
+    for year in pivot_df['year']:
+        ax = pivot_df[pivot_df['year']==year].plot.bar(stacked=True, title=year)
     return ax
 
 def preds_to_df(data):
@@ -197,22 +235,22 @@ def json_to_df(data):
 
 if __name__ == '__main__' :
 
-    with open('data_response.txt') as json_file:
+    with open('data_response_bharatfed99@finvu_1yr.txt') as json_file:
         data = json.load(json_file)
 
-        #df = json_to_df(data)
+        df = json_to_df(data)
 
         from ml_utils import return_predictions
 
-        stat = return_predictions(data)
+       #stat = return_predictions(data)
 
-        balance = int(stat[1])
+        #balance = int(stat[1])
 
-        preds = json.loads(stat[0])
+        #preds = json.loads(stat[0])
 
-        df = preds_to_df(preds)
+        #df = preds_to_df(preds)
 
-    ax = earnings_by_category(df)
+    ax = expense_by_category(df)
 
     plt.show()
 
