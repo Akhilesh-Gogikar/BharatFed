@@ -196,12 +196,15 @@ class DP_LSTM_model():
 
         deb_list = set()
 
+        type_list = []
+
         current_balance = 0
 
         for p in data['body'][0]['fiObjects'][0]['Transactions']['Transaction']:
             if p['type'] == 'CREDIT':
                 date_list.append(p['valueDate'])
                 amount_list.append(p['amount'])
+                type_list.append(p['type'])
                 amount_cat_list.append(p['narration'])
                 cr_list.add(p['narration'])
                 bal_list.append(p['currentBalance'])
@@ -209,19 +212,48 @@ class DP_LSTM_model():
             else:
                 date_list.append(p['valueDate'])
                 amount_list.append(p['amount'])
+                type_list.append(p['type'])
                 amount_cat_list.append(p['narration'])
                 deb_list.add(p['narration'])
                 bal_list.append(p['currentBalance'])
                 current_balance = p['currentBalance']
 
-        m_data = {'dates': date_list, 'category': amount_cat_list, 'amount': amount_list, 'currentBalance': bal_list}
+        m_data = {'dates': date_list, 'category': amount_cat_list, 'amount': amount_list, 'currentBalance': bal_list, 'type': type_list}
         df = pd.DataFrame(data=m_data)
         mon_scaler = preprocessing.MinMaxScaler()
         amt_scaler = preprocessing.MinMaxScaler()
         day_scaler = preprocessing.MinMaxScaler()
 
-        df['amount'] = amt_scaler.fit_transform(df['amount'].values.reshape(-1, 1))
         df['dates'] = df['dates'].astype('datetime64[ns]')
+
+        score = df.groupby(['type', 'category']).resample('M', on='dates').sum().reset_index().sort_values(
+            by='dates')
+
+        score = score.groupby(['type', 'category']).mean().reset_index()
+
+        income_sum = score.loc[score['type'] == 'CREDIT'].sum()['amount']
+
+        salary_ratio = float(score.loc[score['category']=='SALARY']['amount']/income_sum)
+
+        expense_income_ratio = score.loc[score['category'].isin(['gym','food','beauty','entertainment'])]['amount'].sum()/income_sum
+
+        desc_purchase_ratio = score.loc[score['category'].isin(['outing','travel','purchase'])]['amount'].sum()/income_sum
+
+        loan_income_ratio = float(score.loc[score['category']=='loan']['amount']/income_sum)
+
+        bill_income_ratio = score.loc[score['category'].isin(['RENT', 'medical', 'recharge'])]['amount'].sum()/income_sum
+
+        fin_score = ((salary_ratio/(expense_income_ratio+desc_purchase_ratio+loan_income_ratio+bill_income_ratio))+(0.001/(expense_income_ratio*desc_purchase_ratio*loan_income_ratio*bill_income_ratio)))
+
+        fin_score = int(1000*(1 / (1 + np.exp(-fin_score))))
+
+
+        #Write the avg. Monthly income and financial score to the profile
+        print(fin_score, income_sum)
+
+
+        df['amount'] = amt_scaler.fit_transform(df['amount'].values.reshape(-1, 1))
+
         df['month'] = mon_scaler.fit_transform(df['dates'].dt.strftime('%m').values.reshape(-1, 1))
         df['day'] = day_scaler.fit_transform(df['dates'].dt.strftime('%d').values.reshape(-1, 1))
 
