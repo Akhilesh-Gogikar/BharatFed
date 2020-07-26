@@ -177,6 +177,37 @@ class DP_LSTM_model():
         res = res.drop([feature_to_encode], axis=1)
         return (res, dum_cols)
 
+    def calculate_fin_score(self, df):
+
+        score = df.groupby(['type', 'category']).resample('M', on='dates').sum().reset_index().sort_values(
+            by='dates')
+
+        score = score.groupby(['type', 'category']).mean().reset_index()
+
+        income_sum = score.loc[score['type'] == 'CREDIT'].sum()['amount']
+
+        salary_ratio = float(score.loc[score['category'] == 'SALARY']['amount'] / income_sum)
+
+        expense_income_ratio = score.loc[score['category'].isin(['gym', 'food', 'beauty', 'entertainment'])][
+                                   'amount'].sum() / income_sum
+
+        desc_purchase_ratio = score.loc[score['category'].isin(['outing', 'travel', 'purchase'])][
+                                  'amount'].sum() / income_sum
+
+        loan_income_ratio = float(score.loc[score['category'] == 'loan']['amount'] / income_sum)
+
+        bill_income_ratio = score.loc[score['category'].isin(['RENT', 'medical', 'recharge'])][
+                                'amount'].sum() / income_sum
+
+        fin_score = ((salary_ratio / (
+                    expense_income_ratio + desc_purchase_ratio + loan_income_ratio + bill_income_ratio)) + (0.001 / (
+                    expense_income_ratio * desc_purchase_ratio * loan_income_ratio * bill_income_ratio)))
+
+        fin_score = int(1000 * (1 / (1 + np.exp(-fin_score))))
+
+        # Write the avg. Monthly income and financial score to the profile
+        return fin_score, income_sum
+
 
     def train_data_prep(self, data):
         '''
@@ -226,30 +257,9 @@ class DP_LSTM_model():
 
         df['dates'] = df['dates'].astype('datetime64[ns]')
 
-        score = df.groupby(['type', 'category']).resample('M', on='dates').sum().reset_index().sort_values(
-            by='dates')
+        fin_score, monthly_income = self.calculate_fin_score(df)
 
-        score = score.groupby(['type', 'category']).mean().reset_index()
-
-        income_sum = score.loc[score['type'] == 'CREDIT'].sum()['amount']
-
-        salary_ratio = float(score.loc[score['category']=='SALARY']['amount']/income_sum)
-
-        expense_income_ratio = score.loc[score['category'].isin(['gym','food','beauty','entertainment'])]['amount'].sum()/income_sum
-
-        desc_purchase_ratio = score.loc[score['category'].isin(['outing','travel','purchase'])]['amount'].sum()/income_sum
-
-        loan_income_ratio = float(score.loc[score['category']=='loan']['amount']/income_sum)
-
-        bill_income_ratio = score.loc[score['category'].isin(['RENT', 'medical', 'recharge'])]['amount'].sum()/income_sum
-
-        fin_score = ((salary_ratio/(expense_income_ratio+desc_purchase_ratio+loan_income_ratio+bill_income_ratio))+(0.001/(expense_income_ratio*desc_purchase_ratio*loan_income_ratio*bill_income_ratio)))
-
-        fin_score = int(1000*(1 / (1 + np.exp(-fin_score))))
-
-
-        #Write the avg. Monthly income and financial score to the profile
-        print(fin_score, income_sum)
+        print(fin_score, monthly_income)
 
 
         df['amount'] = amt_scaler.fit_transform(df['amount'].values.reshape(-1, 1))
