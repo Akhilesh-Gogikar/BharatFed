@@ -15,6 +15,7 @@ from sklearn.metrics import mean_squared_error
 
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.layers import LSTM
+import random
 
 import tensorflow as tf
 import tensorflow.compat.v1 as tf
@@ -443,7 +444,7 @@ class DP_LSTM_model():
         date = last['valueDate']
         amount = last['amount']
         cat = last['narration']
-        bal = last['currentBalance']
+        bal = int(last['currentBalance'])
         return_dict['Balance'] = bal
 
         date = datetime.strptime(date, "%Y-%m-%d").date()
@@ -482,12 +483,26 @@ class DP_LSTM_model():
 
             index = np.argmax(yhat[0], axis=1).astype(int)
 
-            cate = categories[index[0]]
+            cat = categories[index[0]].split('_')[1]
 
-            type_t = 'CREDIT' if cate in creds else 'DEBIT'
+            type_t = 'CREDIT' if cat in creds else 'DEBIT'
 
             amount = amt_scaler.inverse_transform(yhat[1].reshape(1, -1)).astype(int)
 
-            return_dict['Predictions'].append({'date': str(date), 'category': cate, 'amount': int(amount[0][0]), 'type': type_t})
+            if type_t == 'DEBIT':
+
+                if amount[0][0] > bal:
+                    amount[0][0] = bal
+                    cat = random.choice(categories[:-1]).split('_')[1]
+                    continue
+
+                else:
+                    bal -= amount[0][0]
+
+            else:
+
+                bal += amount[0][0]
+
+            return_dict['Predictions'].append({'date': str(date), 'category': cat, 'amount': int(amount[0][0]), 'type': type_t})
 
         return json.dumps(return_dict)
