@@ -8,31 +8,40 @@ with open('data_response_bharatfed99@finvu_1yr.txt') as json_file:
 
     DP_module = DP_LSTM_model()
 
-    #print(data['body'][0]['fiObjects'][0]['Profile']['Holders']['Holder']['pan'])
+    # print(data['body'][0]['fiObjects'][0]['Profile']['Holders']['Holder']['pan'])
 
-    #pan = data['body'][0]['fiObjects'][0]['Profile']['Holders']['Holder']['pan']
+    pan = data['body'][0]['fiObjects'][0]['Profile']['Holders']['Holder']['pan']
 
-    X, Y, scaler_dict, y_cols, creds, debs = DP_module.train_data_prep(data)
+    X, Y, scaler_dict, y_cols, creds, debs, fin_score, monthly_income = DP_module.train_data_prep(data)
 
-    #print(creds, debs)
+    # print(creds, debs)
 
-    #print(y_cols)
+    stat = DP_module.return_predictions(data, creds, debs)
 
-    #split = int(len(X) * 0.75)
+    preds = json.loads(stat)
 
-    #train_X, test_X, train_y, test_y = train_test_split(X.values, Y.values, test_size=0.15, shuffle=True)
+    print(preds)
 
-    #train_X = train_X.reshape((train_X.shape[0], 1, train_X.shape[1]))
-    #test_X = test_X.reshape((test_X.shape[0], 1, test_X.shape[1]))
-    #print(train_X.shape, train_y.shape, test_X.shape, test_y.shape)
+    exit()
+    
+    '''
+    # print(y_cols)
 
-    #model = DP_module.train_model(pan, train_X, train_y, test_X, test_y)
+    split = int(len(X) * 0.75)
 
-    #rmse = DP_module.prediction_test(model, scaler_dict, test_X, test_y, y_cols)
+    train_X, test_X, train_y, test_y = train_test_split(X.values, Y.values, test_size=0.15, shuffle=True)
 
-    #print(rmse)
+    train_X = train_X.reshape((train_X.shape[0], 1, train_X.shape[1]))
+    test_X = test_X.reshape((test_X.shape[0], 1, test_X.shape[1]))
+    # print(train_X.shape, train_y.shape, test_X.shape, test_y.shape)
 
-    #out = DP_module.save_train_model(scaler_dict, data)
+    model = DP_module.train_model(pan, train_X, train_y, test_X, test_y)
+
+    rmse = DP_module.prediction_test(model, scaler_dict, test_X, test_y, y_cols)
+
+    # print(rmse)
+
+    out = DP_module.save_train_model(scaler_dict, data)
 
     stat = DP_module.return_predictions(data, creds, debs)
 
@@ -47,3 +56,5 @@ with open('data_response_bharatfed99@finvu_1yr.txt') as json_file:
     spare_bal = find_spare_balance(preds['Predictions'], balance)
 
     print("The user has {} rupees in his account which the prediction model forecasts won't be spent".format(spare_bal))
+    
+    '''

@@ -19,6 +19,7 @@ import random
 
 import tensorflow as tf
 import tensorflow.compat.v1 as tf
+import tensorflow_probability as tfp
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], True)
@@ -28,6 +29,8 @@ import collections
 
 from tensorflow_privacy.privacy.analysis import privacy_ledger
 from tensorflow_privacy.privacy.dp_query import gaussian_query
+from tensorflow_probability.python.layers import DenseFlipout
+
 
 class DP_LSTM_model():
 
@@ -120,7 +123,8 @@ class DP_LSTM_model():
                     sample_state = process_microbatch(idx, sample_state)
 
                 if curr_noise_mult > 0:
-                    grad_sums, self._global_state = (self._dp_sum_query.get_noised_result(sample_state, self._global_state))
+                    grad_sums, self._global_state = (
+                        self._dp_sum_query.get_noised_result(sample_state, self._global_state))
                 else:
                     grad_sums = sample_state
 
@@ -133,7 +137,6 @@ class DP_LSTM_model():
                 return grads_and_vars
 
         return DPOptimizerClass
-
 
     def make_gaussian_optimizer_class(self, cls):
         """Constructs a DP optimizer with Gaussian averaging of updates."""
@@ -201,14 +204,13 @@ class DP_LSTM_model():
                                 'amount'].sum() / income_sum
 
         fin_score = ((salary_ratio / (
-                    expense_income_ratio + desc_purchase_ratio + loan_income_ratio + bill_income_ratio)) + (0.001 / (
-                    expense_income_ratio * desc_purchase_ratio * loan_income_ratio * bill_income_ratio)))
+                expense_income_ratio + desc_purchase_ratio + loan_income_ratio + bill_income_ratio)) + (0.001 / (
+                expense_income_ratio * desc_purchase_ratio * loan_income_ratio * bill_income_ratio)))
 
         fin_score = int(1000 * (1 / (1 + np.exp(-fin_score))))
 
         # Write the avg. Monthly income and financial score to the profile
         return fin_score, income_sum
-
 
     def train_data_prep(self, data):
         '''
@@ -250,7 +252,8 @@ class DP_LSTM_model():
                 bal_list.append(p['currentBalance'])
                 current_balance = p['currentBalance']
 
-        m_data = {'dates': date_list, 'category': amount_cat_list, 'amount': amount_list, 'currentBalance': bal_list, 'type': type_list}
+        m_data = {'dates': date_list, 'category': amount_cat_list, 'amount': amount_list, 'currentBalance': bal_list,
+                  'type': type_list}
         df = pd.DataFrame(data=m_data)
         mon_scaler = preprocessing.MinMaxScaler()
         amt_scaler = preprocessing.MinMaxScaler()
@@ -261,7 +264,6 @@ class DP_LSTM_model():
         fin_score, monthly_income = self.calculate_fin_score(df)
 
         print(fin_score, monthly_income)
-
 
         df['amount'] = amt_scaler.fit_transform(df['amount'].values.reshape(-1, 1))
 
@@ -309,8 +311,56 @@ class DP_LSTM_model():
 
         df.dropna(inplace=True)
 
-        return df[cols], df[y_cols], scalers, y_cols, cr_list, deb_list
+        return df[cols], df[y_cols], scalers, y_cols, cr_list, deb_list, fin_score, monthly_income
 
+    def get_model_def(self, train_X, shp):
+        tfd = tfp.distributions
+
+        kl_divergence_function = (lambda q, p, _: tfd.kl_divergence(q, p))
+
+        def posterior_mean_field(kernel_size, bias_size=0, dtype=None):
+            n = kernel_size + bias_size
+            c = np.log(np.expm1(1.))
+            return tf.keras.Sequential([
+                tfp.layers.VariableLayer(2 * n, dtype=dtype),
+                tfp.layers.DistributionLambda(lambda t: tfd.Independent(
+                    tfd.Normal(loc=t[..., :n],
+                               scale=1e-5 + tf.nn.softplus(c + t[..., n:])),
+                    reinterpreted_batch_ndims=1)),
+            ])
+
+        def prior_trainable(kernel_size, bias_size=0, dtype=None):
+            n = kernel_size + bias_size
+            return tf.keras.Sequential([
+                tfp.layers.VariableLayer(n, dtype=dtype),
+                tfp.layers.DistributionLambda(lambda t: tfd.Independent(
+                    tfd.Normal(loc=t, scale=1),
+                    reinterpreted_batch_ndims=1)),
+            ])
+
+        # kernel_divergence_fn=kl_divergence_function,
+
+        input = tf.keras.layers.Input(shape=(train_X.shape[1], train_X.shape[2]))
+        x10 = tfp.layers.DenseFlipout(15, activation='relu')(input)
+        x20 = tfp.layers.DenseVariational(units=15, make_posterior_fn=posterior_mean_field,
+                                          make_prior_fn=prior_trainable, kl_weight=1 / 64, activation='relu')(input)
+        x1 = LSTM(50)(x10)
+        x1 = Dropout(0.1)(x1)
+        x2 = LSTM(50)(x20)
+        x2 = tfp.layers.DenseVariational(units=15, make_posterior_fn=posterior_mean_field,
+                                         make_prior_fn=prior_trainable, kl_weight=1 / 64, activation='relu')(x2)
+        x1 = tfp.layers.DenseFlipout(15, activation='relu')(x1)
+        reg_out = tfp.layers.DenseFlipout(1, activation='sigmoid', name='reg')(x1)
+
+        # cls_out = Dense(15, name='cls', activation="softmax")(x2)
+        cls_out = tfp.layers.DenseVariational(units=15, make_posterior_fn=posterior_mean_field,
+                                              make_prior_fn=prior_trainable, kl_weight=1 / 64, activation='softmax',
+                                              name='cls')(x2)
+
+        model1 = tf.keras.Model(input, [reg_out])
+        model2 = tf.keras.Model(input, [cls_out])
+        model = tf.keras.Model(input, [cls_out, reg_out])
+        return model, model1, model2
 
     def train_model(self, pan, train_X, train_y, test_x, test_y):
         # design network
@@ -321,86 +371,78 @@ class DP_LSTM_model():
         for i in range(shp[1]):
             cls_wgts[i] = (1 / np.count_nonzero(train_y[:, i] == 1)) * shp[0] / shp[1]
 
-        print(cls_wgts)
-
-        input = tf.keras.layers.Input(shape=(train_X.shape[1], train_X.shape[2]))
-        x10 = Dense(15, activation='relu')(input)
-        x20 = Dense(15, activation='relu')(input)
-        x1 = LSTM(50)(x10)
-        x1 = Dropout(0.1)(x1)
-        x2 = Dense(15, activation='relu')(x20)
-        x2 = Dense(15, activation='relu')(x2)
-        x2 = tf.keras.layers.Flatten()(x2)
-        reg_out = Dense(1, name='reg', activation="sigmoid")(x1)
-        cls_out = Dense(15, name='cls', activation="softmax")(x2)
-
-        model1 = tf.keras.Model(input, [reg_out])
-        model2 = tf.keras.Model(input, [cls_out])
-        model = tf.keras.Model(input, [cls_out, reg_out])
+        #print(cls_wgts)
 
         optimizer = self.DPGradientDescentGaussianOptimizer_NEW(
             l2_norm_clip=1.0,
-            noise_multiplier=1.2,
+            noise_multiplier=1.05,
             num_microbatches=250,
             learning_rate=0.1)
 
-        model1.compile(loss={'reg': 'mse'}, optimizer=optimizer,
-                       metrics=['MeanSquaredError'])  # GaussianNB()#LinearRegression() categorical_crossentropy
-        model2.compile(loss={'cls': 'categorical_crossentropy'}, optimizer=optimizer,
-                       metrics=['accuracy'])  # GaussianNB()#LinearRegression() categorical_crossentropy
+        model, model1, model2 = self.get_model_def(train_X, shp)
 
-        print(model1.summary())
-        checkpoint_filepath = '{}.h5'.format(pan)
+        model1.compile(loss={'reg': 'mse'}, optimizer=optimizer,
+                       metrics=['MeanSquaredError'],
+                       experimental_run_tf_function=False)  # GaussianNB()#LinearRegression() categorical_crossentropy
+        model2.compile(loss={'cls': 'categorical_crossentropy'}, optimizer=optimizer,
+                       metrics=['accuracy'],
+                       experimental_run_tf_function=False)  # GaussianNB()#LinearRegression() categorical_crossentropy
+
+        #print(model1.summary())
+        checkpoint_filepath = 'Checkpoints/{}'.format(pan)
         model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_filepath,
             save_weights_only=True,
-            monitor='loss',
+            monitor='val_loss',
             mode='min',
             save_best_only=True)
 
         history = model1.fit(train_X, train_y[:, -1], epochs=10, batch_size=64,
                              validation_data=(test_x, [test_y[:, :-1], test_y[:, -1]]), verbose=2,
-                             shuffle=False, callbacks=[model_checkpoint_callback])
+                             shuffle=True, callbacks=[model_checkpoint_callback])
 
         model1.load_weights(checkpoint_filepath)
 
+        '''
         # plot history
         pyplot.plot(history.history['loss'], label='train')
         pyplot.plot(history.history['val_loss'], label='test')
         pyplot.legend()
         pyplot.show()
+        '''
 
-        print(model2.summary())
-        checkpoint_filepath = '{}.h5'.format(pan)
+        #print(model2.summary())
+        checkpoint_filepath = 'Checkpoints/{}'.format(pan)
         model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_filepath,
             save_weights_only=True,
-            monitor='loss',
+            monitor='val_loss',
             mode='min',
             save_best_only=True)
 
-        history = model2.fit(train_X, train_y[:, :-1], epochs=100, batch_size=64,
+        history = model2.fit(train_X, train_y[:, :-1], epochs=20, batch_size=64,
                              validation_data=(test_x, [test_y[:, :-1], test_y[:, -1]]), verbose=2,
                              shuffle=False, callbacks=[model_checkpoint_callback], class_weight=cls_wgts)
 
         model2.load_weights(checkpoint_filepath)
 
+        '''
         # plot history
         pyplot.plot(history.history['loss'], label='train')
         pyplot.plot(history.history['val_loss'], label='test')
         pyplot.legend()
         pyplot.show()
+        '''
 
-        model.save('{}.h5'.format(pan))
+        model.save('Saved_models/{}'.format(pan), include_optimizer=True)
 
         return model
-
 
     def prediction_test(self, model, scaler_dict, test_X, test_y, y_cols):
         # make a prediction
         yhat = model.predict(test_X)
 
-        print(yhat)
+        #print(yhat)
 
         yhat1 = concatenate([yhat[0], yhat[1]], axis=1)
 
@@ -411,11 +453,11 @@ class DP_LSTM_model():
         print('Test RMSE: %.3f' % rmse)
 
         expenses = np.argmax(test_y[:, :-1], axis=1).astype(int)
-        print(expenses)
+
         amounts = scaler_dict['amount_scaler'].inverse_transform(test_y[:, -1].reshape(-1, 1))
 
         p_expenses = np.argmax(yhat1[:, :-1], axis=1).astype(int)
-        print(p_expenses)
+
         p_amounts = scaler_dict['amount_scaler'].inverse_transform(yhat1[:, -1].reshape(-1, 1)).astype(int)
 
         for i in range(len(expenses)):
@@ -423,11 +465,10 @@ class DP_LSTM_model():
 
         return rmse
 
-
     def save_train_model(self, scalers, data):
         out = False
 
-        modelfile = '{}.sav'.format(data['body'][0]['fiObjects'][0]['Profile']['Holders']['Holder']['pan'])
+        modelfile = 'Scalers/{}.sav'.format(data['body'][0]['fiObjects'][0]['Profile']['Holders']['Holder']['pan'])
 
         try:
             pickle.dump(scalers, open(modelfile, 'wb'))
@@ -436,7 +477,6 @@ class DP_LSTM_model():
             print(e)
 
         return out
-
 
     def return_predictions(self, data, creds, debs, period=90):
         return_dict = {}
@@ -449,15 +489,19 @@ class DP_LSTM_model():
 
         date = datetime.strptime(date, "%Y-%m-%d").date()
 
-        modelfile = '{}.sav'.format(data['body'][0]['fiObjects'][0]['Profile']['Holders']['Holder']['pan'])
+        modelfile = 'Scalers/{}.sav'.format(data['body'][0]['fiObjects'][0]['Profile']['Holders']['Holder']['pan'])
 
         try:
             models = pickle.load(open(modelfile, 'rb'))
-            model = tf.keras.models.load_model(
-                '{}.h5'.format(data['body'][0]['fiObjects'][0]['Profile']['Holders']['Holder']['pan']), compile=False)
+            pan = data['body'][0]['fiObjects'][0]['Profile']['Holders']['Holder']['pan']
+            # load weights into new model
+
+            model = tf.keras.models.load_model('Saved_models/{}'.format(pan), compile=False)
+
         except Exception as e:
             print(e)
             return None
+
         mon_scaler = models['month_scaler']
         day_scaler = models['day_scaler']
         amt_scaler = models['amount_scaler']
@@ -466,12 +510,13 @@ class DP_LSTM_model():
         return_dict['Predictions'] = []
 
         for d in range(1, period + 1):
-            day = day_scaler.transform(np.array(date.strftime('%d')).reshape(1,-1))
-            mon = mon_scaler.transform(np.array(date.strftime('%m')).reshape(1,-1))
+            day = day_scaler.transform(np.array(date.strftime('%d')).reshape(1, -1))
+            mon = mon_scaler.transform(np.array(date.strftime('%m')).reshape(1, -1))
 
-            amount = amt_scaler.transform(np.array(amount).reshape(1,-1))
+            amount = amt_scaler.transform(np.array(amount).reshape(1, -1))
 
-            cats = np.array([1 if x.split('_')[1] == cat else 0 for x in categories[:-1]]).reshape((len(categories[:-1]),1))
+            cats = np.array([1 if x.split('_')[1] == cat else 0 for x in categories[:-1]]).reshape(
+                (len(categories[:-1]), 1))
 
             date = date + timedelta(1)
 
@@ -483,7 +528,7 @@ class DP_LSTM_model():
 
             index = np.argmax(yhat[0], axis=1).astype(int)
 
-            cat = categories[index[0]].split('_')[1]
+            cat = ''.join(categories[index[0]].split('_')[1:])
 
             type_t = 'CREDIT' if cat in creds else 'DEBIT'
 
@@ -493,7 +538,7 @@ class DP_LSTM_model():
 
                 if amount[0][0] > bal:
                     amount[0][0] = bal
-                    cat = random.choice(categories[:-1]).split('_')[1]
+                    cat = ''.join(random.choice(categories[:-1]).split('_')[1:])
                     continue
 
                 else:
@@ -503,6 +548,7 @@ class DP_LSTM_model():
 
                 bal += amount[0][0]
 
-            return_dict['Predictions'].append({'date': str(date), 'category': cat, 'amount': int(amount[0][0]), 'type': type_t})
+            return_dict['Predictions'].append(
+                {'date': str(date), 'category': cat, 'amount': int(amount[0][0]), 'type': type_t})
 
         return json.dumps(return_dict)
