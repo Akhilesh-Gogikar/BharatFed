@@ -17,6 +17,8 @@ Usage:
 
 4) Testing finvu aa is done in some of the other files
 
+5) Testing the federated model averaging code: python federated_model_gen.py
+
 Sample data is present in the JSON files.
 
 Happy Exploring!
