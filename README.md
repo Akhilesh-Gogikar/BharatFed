@@ -22,3 +22,8 @@ Usage:
 Sample data is present in the JSON files.
 
 Happy Exploring!
+
+
+## Modernization Task Plan
+
+A detailed execution task for upgrading BharatFed for rural credit accessibility is available in `TASK_BHARATFED_V2_RURAL_CREDIT.md`.
