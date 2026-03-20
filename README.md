@@ -1,28 +1,71 @@
 # BharatFed
 
-BharatFed is a platform for the federation of financial tools for India - where the expense analysis, financial advice and access to microcredit is simple and easy for the underbanked and undereducated India.
+BharatFed is a platform for turning Account Aggregator financial data into practical tools for:
 
-We intend to serve the credit needs of 400 million Indians and to become a key component in the financial data value chain.
+- personal finance analytics,
+- explainable cashflow forecasting, and
+- P2P/micro-credit workflows.
 
-We built a platform which will utilize the consent approved financial data of a user through a new regulatory framework(Account Aggregators) and provide personal finance management, expense forecasting, p2p lending and micro loans.
+The original repository contains legacy experiments for privacy-preserving ML, FIU integration, and loan processing. This codebase has now been extended with a lightweight, dependency-minimal backend service that makes the repo usable without requiring the old TensorFlow stack.
 
-Our secret sauce is our expertise in privacy preserving machine learning which generate insights into credit worthiness of a User.
+## What is now available
 
-Usage:
-1) Install the requirements in a conda environment using pip > requirements.txt
+### Modernized backend service
 
-2) The LSTM based model is trained in train_tfe_model.py: run - python train_tfe_model.py
+The repository now includes a standard-library HTTP API that exposes:
 
-3) The differential privacy based linear ml_model is trained in train_dp_model.py: python train_dp_model.py
+- `/health` for service status,
+- `/analytics/overview` for account summaries from the sample FIU payload,
+- `/analytics/forecast?days=30` for rule-based recurring cashflow projections,
+- `/profiles` and `/profiles/<user_id>` for borrower/lender profile access,
+- `/loans`, `/loans/requests`, and `/portfolio/summary` for lending operations, and
+- `POST /loans/requests` to register new loan requests safely in SQLite.
 
-4) Testing finvu aa is done in some of the other files
+Run it locally with:
 
-5) Testing the federated model averaging code: python federated_model_gen.py
+```bash
+python app.py
+```
 
-Sample data is present in the JSON files.
+Or customize paths/host/port:
 
-Happy Exploring!
+```bash
+python app.py --host 0.0.0.0 --port 8080 --sample-data data_response_bharatfed99@finvu_1yr.txt --database bharat_fed.db
+```
 
+## Repository structure
+
+- `bharatfed/analytics.py` – FIU payload parsing, analytics summaries, and forecast generation.
+- `bharatfed/lending.py` – SQLite-backed profile, loan request, and portfolio helpers.
+- `bharatfed/service.py` – application service layer used by the API.
+- `bharatfed/api.py` – dependency-light HTTP server.
+- `app.py` – local server entrypoint.
+- `tests/` – built-in `unittest` coverage for analytics, lending, and HTTP endpoints.
+
+## Legacy ML scripts
+
+The original ML and experimentation scripts are still present:
+
+1. `train_tfe_model.py`
+2. `train_dp_model.py`
+3. `federated_model_gen.py`
+4. `test_fiu_api.py`
+5. `test_1yr_data_req.py`
+
+These scripts rely on older dependencies listed in `requirements.txt`. The new backend layer is intentionally written using the Python standard library so it can be exercised immediately in constrained environments.
+
+## Running tests
+
+Use Python’s built-in unittest discovery:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+## Data sources
+
+- Sample FIU responses are included in `data_response.txt` and `data_response_bharatfed99@finvu_1yr.txt`.
+- Lending data is backed by the checked-in SQLite database `bharat_fed.db`.
 
 ## Modernization Task Plan
 
