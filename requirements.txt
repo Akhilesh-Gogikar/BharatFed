@@ -27,7 +27,7 @@ mkl-fft==1.1.0
 mkl-random==1.1.1
 mkl-service==2.3.0
 mpmath==1.1.0
-numpy==1.19.0
+numpy==1.22.0
 oauthlib==3.1.0
 opt-einsum==3.1.0
 pandas==1.0.5
