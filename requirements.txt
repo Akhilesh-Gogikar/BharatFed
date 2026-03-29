@@ -18,7 +18,7 @@ google-pasta==0.2.0
 grpcio==1.27.2
 h5py @ file:///tmp/build/80754af9/h5py_1593454122442/work
 idna @ file:///tmp/build/80754af9/idna_1593446292537/work
-joblib==0.16.0
+joblib==1.2.0
 Keras-Preprocessing==1.1.0
 kiwisolver==1.2.0
 Markdown==3.1.1
